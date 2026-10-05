@@ -1,0 +1,13 @@
+# 送信するのは reports/ と src/ だけ（それ以外はすべて除外）
+/*
+!/.gitignore
+!/reports/
+!/src/
+
+# 念のため明示的に除外
+data/
+.venv/
+.env
+*.env
+__pycache__/
+*.pyc
