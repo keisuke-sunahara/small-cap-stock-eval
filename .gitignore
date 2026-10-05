@@ -1,8 +1,9 @@
-# 送信するのは reports/ と src/ だけ（それ以外はすべて除外）
+# 送信するのは reports/・src/ と、評価役のルールの写し（rules/CLAUDE.md）だけ（それ以外はすべて除外）
 /*
 !/.gitignore
 !/reports/
 !/src/
+!/rules/
 
 # 念のため明示的に除外
 data/

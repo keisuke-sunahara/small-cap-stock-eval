@@ -224,8 +224,10 @@ def cost_rate(cost, price: float) -> float:
 
 def simulate(pc: Precomp, kind: str, cost, budget_mode: str = "min_equity",
              continuation: str = "prev_day", seed: int | None = None, record: bool = True,
-             dev_compat=False) -> Result:
-    """dev_compat=True は照合用：開発役の実装の細部（売れ残りの銘柄は注文の対象から外す、評価額は調整前の終値の
+             dev_compat=False, rng_compat: bool = False) -> Result:
+    """rng_compat=True は照合用：ランダム選択の乱数の引き方を開発役に合わせる（順位を付けるたびに全銘柄に一様乱数を振り、
+    継続の判断は売れ残りでない保有がある週だけ行う）。分布は同じで、乱数の並びだけが変わる。
+    dev_compat=True は照合用：開発役の実装の細部（売れ残りの銘柄は注文の対象から外す、評価額は調整前の終値の
     直前値 × 分割で直した株数）に合わせる。本来のルールの計算は dev_compat=False。"""
     rng = np.random.default_rng(seed) if kind == "random" else None
     T = len(pc.dates)
@@ -236,6 +238,10 @@ def simulate(pc: Precomp, kind: str, cost, budget_mode: str = "min_equity",
     rank_cache: dict[int, np.ndarray] = {}
 
     def rank(t: int) -> np.ndarray:
+        if rng_compat and kind == "random":
+            sc = rng.random(len(pc.codes))
+            idx = np.flatnonzero(pc.universe[t])
+            return idx[np.lexsort((idx, -sc[idx]))]
         if t not in rank_cache:
             rank_cache[t] = pc.ranking(t, kind, rng)
         return rank_cache[t]
@@ -329,7 +335,7 @@ def simulate(pc: Precomp, kind: str, cost, budget_mode: str = "min_equity",
                     cash -= px * sh * (1 + cr)
                     pos.append(Pos(j, t, sh, px))
         # ---- 最終営業日：継続の判断と引成の売り ----
-        if continuation == "none":
+        if continuation == "none" or (rng_compat and not any(not p.pending for p in pos)):
             keep = set()
         else:
             q = dk - 1 if continuation == "prev_day" else dk
